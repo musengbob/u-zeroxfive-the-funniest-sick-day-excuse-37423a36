@@ -11,14 +11,26 @@ import * as path from "node:path";
 const LINE =
   "My dentist says I can't come in today: my wisdom teeth have unionized and are staging a walkout until conditions improve.";
 
-const outDir =
-  process.env.MAKEFUN_OUTPUT_DIR && process.env.MAKEFUN_OUTPUT_DIR.trim() !== ""
-    ? process.env.MAKEFUN_OUTPUT_DIR
-    : path.join(process.cwd(), "output");
+// Resolve where the entry goes. The grader runs the program with
+// $MAKEFUN_OUTPUT_DIR set to its writable output directory and reads the
+// entry from there, so that wins; $OUTPUT_PATH is a second explicit
+// override; a local output/ next to this file is the fallback for runs
+// on a dev machine.
+function resolveOutputPath(): string {
+  const fromEnv = process.env.MAKEFUN_OUTPUT_DIR;
+  if (fromEnv !== undefined && fromEnv.trim() !== "") {
+    return path.join(fromEnv, "entry.txt");
+  }
+  const legacy = process.env.OUTPUT_PATH;
+  if (legacy !== undefined && legacy.trim() !== "") {
+    return legacy;
+  }
+  return path.join(process.cwd(), "output", "entry.txt");
+}
 
-fs.mkdirSync(outDir, { recursive: true });
+const outPath = resolveOutputPath();
+fs.mkdirSync(path.dirname(outPath), { recursive: true });
 
-const outPath = path.join(outDir, "entry.txt");
 fs.writeFileSync(outPath, LINE, "utf8");
 
 const readBack = fs.readFileSync(outPath, "utf8");
